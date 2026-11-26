@@ -1,0 +1,68 @@
+[package]
+name = "ty-mccabe"
+# 配る版は pyproject.toml の version（ty の版と、道具だけを直したときの 4 桁目）。Cargo の版は使わない
+version = "0.0.0"
+description = "ty の型で呼ぶ先を辿り、呼ぶ先まで含めた McCabe の複雑度を出す"
+license = "MIT"
+repository = "https://github.com/fukumotoikuma/ty-mccabe"
+edition = "2024"
+publish = false
+
+# ty 0.0.103（astral-sh/ty の 0.0.103 のタグ）が使う ruff のコミット。Cargo.lock は ruff のものを写して版をそろえる
+[dependencies]
+ruff_db = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84", features = ["os"] }
+ruff_python_ast = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ruff_source_file = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ruff_python_parser = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ruff_text_size = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ty_project = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ty_python_core = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ty_module_resolver = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ty_ide = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ty_python_semantic = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ruff_linter = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+anyhow = "1"
+# ty check と同じく、型推論をファイルごとに並べて回す（ty が使う版）
+rayon = "1.10"
+
+
+[dev-dependencies]
+tempfile = "3"
+
+# ty・ruff の中にある関数の可視性を上げるだけのパッチ（patches/ty.patch。docs/design.md の 9）。vendor/ruff は
+# scripts/prepare_ty.py が、上の rev の ruff を取ってきてパッチを当てて作る
+[patch."https://github.com/astral-sh/ruff"]
+ruff_annotate_snippets = { path = "vendor/ruff/crates/ruff_annotate_snippets" }
+ruff_cache = { path = "vendor/ruff/crates/ruff_cache" }
+ruff_db = { path = "vendor/ruff/crates/ruff_db" }
+ruff_diagnostics = { path = "vendor/ruff/crates/ruff_diagnostics" }
+ruff_index = { path = "vendor/ruff/crates/ruff_index" }
+ruff_linter = { path = "vendor/ruff/crates/ruff_linter" }
+ruff_macros = { path = "vendor/ruff/crates/ruff_macros" }
+ruff_memory_usage = { path = "vendor/ruff/crates/ruff_memory_usage" }
+ruff_notebook = { path = "vendor/ruff/crates/ruff_notebook" }
+ruff_options_metadata = { path = "vendor/ruff/crates/ruff_options_metadata" }
+ruff_python_ast = { path = "vendor/ruff/crates/ruff_python_ast" }
+ruff_python_codegen = { path = "vendor/ruff/crates/ruff_python_codegen" }
+ruff_python_edits = { path = "vendor/ruff/crates/ruff_python_edits" }
+ruff_python_importer = { path = "vendor/ruff/crates/ruff_python_importer" }
+ruff_python_index = { path = "vendor/ruff/crates/ruff_python_index" }
+ruff_python_literal = { path = "vendor/ruff/crates/ruff_python_literal" }
+ruff_python_parser = { path = "vendor/ruff/crates/ruff_python_parser" }
+ruff_python_semantic = { path = "vendor/ruff/crates/ruff_python_semantic" }
+ruff_python_stdlib = { path = "vendor/ruff/crates/ruff_python_stdlib" }
+ruff_python_trivia = { path = "vendor/ruff/crates/ruff_python_trivia" }
+ruff_ranged_value = { path = "vendor/ruff/crates/ruff_ranged_value" }
+ruff_source_file = { path = "vendor/ruff/crates/ruff_source_file" }
+ruff_text_size = { path = "vendor/ruff/crates/ruff_text_size" }
+ruff_unicode_names2 = { path = "vendor/ruff/crates/ruff_unicode_names2" }
+ruff_unicode_names2_generator = { path = "vendor/ruff/crates/ruff_unicode_names2_generator" }
+ty_combine = { path = "vendor/ruff/crates/ty_combine" }
+ty_ide = { path = "vendor/ruff/crates/ty_ide" }
+ty_module_resolver = { path = "vendor/ruff/crates/ty_module_resolver" }
+ty_project = { path = "vendor/ruff/crates/ty_project" }
+ty_python_core = { path = "vendor/ruff/crates/ty_python_core" }
+ty_python_semantic = { path = "vendor/ruff/crates/ty_python_semantic" }
+ty_site_packages = { path = "vendor/ruff/crates/ty_site_packages" }
+ty_static = { path = "vendor/ruff/crates/ty_static" }
+ty_vendored = { path = "vendor/ruff/crates/ty_vendored" }

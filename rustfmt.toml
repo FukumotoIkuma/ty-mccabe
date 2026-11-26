@@ -1,0 +1,3 @@
+# 行の長さは backend の ruff（110）に近い長さにする
+max_width = 120
+use_small_heuristics = "Max"

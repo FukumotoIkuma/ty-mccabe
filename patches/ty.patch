@@ -1,0 +1,112 @@
+diff --git a/crates/ruff_linter/src/rules/mccabe/mod.rs b/crates/ruff_linter/src/rules/mccabe/mod.rs
+index f90cb4065b..50721081a0 100644
+--- a/crates/ruff_linter/src/rules/mccabe/mod.rs
++++ b/crates/ruff_linter/src/rules/mccabe/mod.rs
+@@ -1,5 +1,5 @@
+ //! Rules from [mccabe](https://pypi.org/project/mccabe/).
+-pub(crate) mod rules;
++pub mod rules;
+ pub mod settings;
+ 
+ #[cfg(test)]
+diff --git a/crates/ruff_linter/src/rules/mccabe/rules/function_is_too_complex.rs b/crates/ruff_linter/src/rules/mccabe/rules/function_is_too_complex.rs
+index 24d495e87b..800c564ffe 100644
+--- a/crates/ruff_linter/src/rules/mccabe/rules/function_is_too_complex.rs
++++ b/crates/ruff_linter/src/rules/mccabe/rules/function_is_too_complex.rs
+@@ -76,7 +76,7 @@ impl Violation for ComplexStructure {
+     }
+ }
+ 
+-fn get_complexity_number(stmts: &[Stmt]) -> usize {
++pub fn get_complexity_number(stmts: &[Stmt]) -> usize {
+     let mut complexity = 0;
+     for stmt in stmts {
+         match stmt {
+diff --git a/crates/ruff_linter/src/rules/mccabe/rules/mod.rs b/crates/ruff_linter/src/rules/mccabe/rules/mod.rs
+index a23f4cd8d2..9af849cb6f 100644
+--- a/crates/ruff_linter/src/rules/mccabe/rules/mod.rs
++++ b/crates/ruff_linter/src/rules/mccabe/rules/mod.rs
+@@ -1,3 +1,3 @@
+ pub(crate) use function_is_too_complex::*;
+ 
+-mod function_is_too_complex;
++pub mod function_is_too_complex;
+diff --git a/crates/ty_python_semantic/src/types.rs b/crates/ty_python_semantic/src/types.rs
+index 2a96414d27..1a6e4f32bb 100644
+--- a/crates/ty_python_semantic/src/types.rs
++++ b/crates/ty_python_semantic/src/types.rs
+@@ -162,7 +162,7 @@ mod iteration;
+ mod known_instance;
+ pub mod list_members;
+ mod literal;
+-mod match_pattern;
++pub mod match_pattern;
+ mod member;
+ mod method;
+ mod mro;
+@@ -282,7 +282,7 @@ pub fn check_types(db: &dyn Db, file: ProgramFile<'_>) -> Vec<Diagnostic> {
+ }
+ 
+ /// Infer the type of a binding.
+-pub(crate) fn binding_type<'db>(db: &'db dyn Db, definition: Definition<'db>) -> Type<'db> {
++pub fn binding_type<'db>(db: &'db dyn Db, definition: Definition<'db>) -> Type<'db> {
+     let inference = infer_definition_types(db, definition);
+     inference.binding_type(definition)
+ }
+@@ -9047,7 +9047,7 @@ impl<'db> Type<'db> {
+     /// Use this only when an over-approximation is sound, such as constructor inference or a
+     /// source-side relation. Target-side subtype checks must use [`Self::to_instance`].
+     #[must_use]
+-    fn to_instance_approximation(
++    pub fn to_instance_approximation(
+         self,
+         db: &'db dyn Db,
+         env: &ProgramEnvironment<'db>,
+diff --git a/crates/ty_python_semantic/src/types/function.rs b/crates/ty_python_semantic/src/types/function.rs
+index 53e980e478..453aba5842 100644
+--- a/crates/ty_python_semantic/src/types/function.rs
++++ b/crates/ty_python_semantic/src/types/function.rs
+@@ -1637,7 +1637,7 @@ impl<'db> FunctionType<'db> {
+     /// calling query is not in the same file as this function is defined in, then this will create
+     /// a cross-module dependency directly on the full AST which will lead to cache
+     /// over-invalidation.
+-    pub(crate) fn definition(self, db: &'db dyn Db) -> Definition<'db> {
++    pub fn definition(self, db: &'db dyn Db) -> Definition<'db> {
+         self.literal(db).definition(db)
+     }
+ 
+diff --git a/crates/ty_python_semantic/src/types/ide_support.rs b/crates/ty_python_semantic/src/types/ide_support.rs
+index 00bec833cf..a688bf5c38 100644
+--- a/crates/ty_python_semantic/src/types/ide_support.rs
++++ b/crates/ty_python_semantic/src/types/ide_support.rs
+@@ -549,7 +549,7 @@ fn class_mro_intersects<'db>(
+ /// members should navigate to the definition that actually provides the behavior for the receiver.
+ /// The returned vector can be empty when the selected member has no implementation definition,
+ /// such as an overload-only method.
+-fn mro_member_definitions<'db>(
++pub fn mro_member_definitions<'db>(
+     db: &'db dyn Db,
+     class: ClassLiteral<'db>,
+     member_name: &str,
+diff --git a/crates/ty_python_semantic/src/types/match_pattern.rs b/crates/ty_python_semantic/src/types/match_pattern.rs
+index 52865b6061..72cdc271e2 100644
+--- a/crates/ty_python_semantic/src/types/match_pattern.rs
++++ b/crates/ty_python_semantic/src/types/match_pattern.rs
+@@ -388,7 +388,7 @@ enum ClassMatchArgs<'db> {
+ 
+ /// The value supplied to one positional subpattern in a class pattern.
+ #[derive(Clone)]
+-pub(crate) enum ClassPatternPositionalSource {
++pub enum ClassPatternPositionalSource {
+     /// The complete subject, as used by Python's special built-in class patterns.
+     MatchSelf,
+     /// The named attribute extracted from the subject according to `__match_args__`.
+@@ -527,7 +527,7 @@ pub(crate) fn class_pattern_positional_result<'db>(
+ ///     case int(_):  # The positional subpattern receives `number` itself.
+ ///         pass
+ /// ```
+-pub(crate) fn class_pattern_positional_sources(
++pub fn class_pattern_positional_sources(
+     db: &dyn Db,
+     env: &ProgramEnvironment<'_>,
+     class: ClassLiteral<'_>,

@@ -1,0 +1,28 @@
+# 書式・clippy・テスト（迂回の例と、小さなプロジェクトでの数・終了コード）。
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      # Rust の版と部品は rust-toolchain.toml（ty を作るのと同じ版）
+      # ty に当てるパッチ（patches/ty.patch）を当てた ruff を vendor/ruff に用意する（Cargo.toml の [patch] が使う）
+      - run: python3 scripts/prepare_ty.py
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --release --all-targets --locked -- -D warnings
+      - run: cargo test --release --locked

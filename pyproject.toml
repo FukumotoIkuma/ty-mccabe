@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "ty-mccabe"
+# ty の版と同じ。道具だけを直して出し直すときは 4 桁目を足す（0.0.103.1）
+version = "0.0.103"
+description = "ty の型で呼ぶ先を辿り、呼ぶ先まで含めた McCabe の複雑度を出す（関数を分けても下がらない複雑度）"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "LICENSE-ruff"]
+requires-python = ">=3.9"
+# 組み込んだ ty と同じ版の ty を使うプロジェクトでだけ入る（答えが ty の言語サーバーと同じになるように）
+dependencies = ["ty==0.0.103"]
+keywords = ["complexity", "mccabe", "cyclomatic", "ty", "lint"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Repository = "https://github.com/fukumotoikuma/ty-mccabe"
+
+[tool.maturin]
+bindings = "bin"

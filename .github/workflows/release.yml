@@ -1,0 +1,212 @@
+# ty の新しい版への追従と、PyPI への公開。
+#
+# - 毎日、main の上で PyPI の ty の最新の版を見る。今より新しければ、その版の ty が指す ruff のコミットに合わせて書き換え
+#   （scripts/follow_ty.py）、書式・clippy・テストが通れば main に積んで tag を打ち、そのまま wheel を作って公開する。
+#   通らなければ（ty の内部の関数の形が変わったなど）、書き換えたものを follow-ty/<版> の枝に置いて PR を開き、人が直す。
+#   その枝があるあいだは、人が直しているので、その版では書き換えない（枝を上書きしない）。
+# - 新しい版が無く、main の版がまだ PyPI に無ければ（前の公開が途中で落ちた）、その版の tag から作り直して公開する。
+# - tag の push で公開するときは、書式・clippy・テストを先に通す。
+# - 道具だけを直して出し直すときは、pyproject.toml の version に 4 桁目を足して（0.0.103.1）、その tag（v0.0.103.1）を push する。
+# - GITHUB_TOKEN で push した tag では workflow が動かないので、追従で打った tag の wheel は同じ実行の中で作る。
+# - 公開は PyPI の trusted publishing（この workflow と environment pypi を PyPI に登録する。秘密の鍵は置かない）。
+name: release
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 毎日、日本時間の 6 時
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  # 1 つの版で PyPI に上げるファイルの数（wheels の matrix の 3 つと sdist）。足りなければ公開が途中で落ちたとして出し直す
+  DISTRIBUTIONS: 4
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  follow:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      tag: ${{ steps.publish.outputs.tag || steps.pending.outputs.tag }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      # 手動で別の枝を選んで動かしても、書き換えて push するのは main
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      # 取得に失敗したら、空の版（更新なし）と取り違えずにジョブを落とす（代入は、置き換えたコマンドの終了コードで終わる）
+      # git ls-remote --exit-code は、参照が無ければ 2 で終わる。ほかの終了コード（通信の失敗など）は「無い」と取り違えずに落とす
+      - id: latest
+        run: |
+          version="$(python3 scripts/follow_ty.py latest)"
+          if [ -n "$version" ]; then
+            code=0
+            git ls-remote --exit-code --heads origin "follow-ty/${version}" > /dev/null || code=$?
+            case "$code" in
+              0) echo "follow-ty/${version} を人が直している"; version="" ;;
+              2) ;;
+              *) exit "$code" ;;
+            esac
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - id: pending
+        if: steps.latest.outputs.version == ''
+        run: |
+          version="$(python3 scripts/follow_ty.py unpublished "$DISTRIBUTIONS")"
+          # tag が無い版（はじめての公開の前など）は、持ち主が tag を push して出す
+          if [ -n "$version" ]; then
+            code=0
+            git ls-remote --exit-code --tags origin "v${version}" > /dev/null || code=$?
+            case "$code" in
+              0) echo "tag=v${version}" >> "$GITHUB_OUTPUT" ;;
+              2) ;;
+              *) exit "$code" ;;
+            esac
+          fi
+      - if: steps.latest.outputs.version != ''
+        run: python3 scripts/follow_ty.py update "${{ steps.latest.outputs.version }}"
+      - if: steps.latest.outputs.version != ''
+        uses: Swatinem/rust-cache@v2
+      # Cargo.lock は ruff のものを写したので、--locked を付けずに、この道具の依存に合わせて足し引きさせる。
+      # 新しい版の ruff に ty のパッチ（可視性を上げるだけ）が当たらなければ、ここで落ちて PR になる
+      - id: check
+        if: steps.latest.outputs.version != ''
+        run: |
+          python3 scripts/prepare_ty.py
+          cargo fmt --check
+          cargo clippy --release --all-targets -- -D warnings
+          cargo test --release
+      - id: publish
+        if: steps.latest.outputs.version != ''
+        env:
+          VERSION: ${{ steps.latest.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "ty ${VERSION} に合わせる"
+          git tag "v${VERSION}"
+          git push --atomic origin HEAD:main "v${VERSION}"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+      # 検査が通らなかったときだけ。書き換えの取得の失敗や push の拒否は、ジョブの失敗として人が見る
+      - name: 通らなかった書き換えを PR にする
+        if: failure() && steps.check.outcome == 'failure'
+        env:
+          VERSION: ${{ steps.latest.outputs.version }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "follow-ty/${VERSION}"
+          git commit -am "ty ${VERSION} に合わせる（検査が通らない）"
+          git push origin "follow-ty/${VERSION}"
+          gh pr create --base main --head "follow-ty/${VERSION}" \
+            --title "ty ${VERSION} に合わせる" \
+            --body "ty ${VERSION} に書き換えたが、書式・clippy・テストのどれかが通らなかった（${RUN}）。直してマージし、v${VERSION} の tag を push する。"
+
+  # tag の push で公開するときの検査（追従の公開は、follow の中で同じ検査を通している）
+  check:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/prepare_ty.py
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --release --all-targets --locked -- -D warnings
+      - run: cargo test --release --locked
+
+  wheels:
+    needs: [follow, check]
+    if: ${{ !cancelled() && ((github.event_name == 'push' && needs.check.result == 'success') || (github.event_name != 'push' && needs.follow.outputs.tag != '')) }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: ubuntu-24.04, target: x86_64 }
+          - { os: ubuntu-24.04-arm, target: aarch64 }
+          - { os: macos-15, target: aarch64 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      TAG: ${{ github.event_name == 'push' && github.ref_name || needs.follow.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: tag と pyproject.toml の版が同じこと
+        run: test "${TAG#v}" = "$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -1)"
+      - run: python3 scripts/prepare_ty.py
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --locked --out dist
+          manylinux: auto
+      # 作った wheel を入れ（依存の ty も PyPI から入る）、迂回の例を測れること（分けた関数は展開され、閾値以上の関数は 1 つの文）
+      - name: 入れて動かす
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install dist/*.whl
+          "$RUNNER_TEMP/venv/bin/ty-mccabe" --version
+          set +e
+          "$RUNNER_TEMP/venv/bin/ty-mccabe" --all --threshold 8 tests/fixture tests/fixture/evade > "$RUNNER_TEMP/out.txt"
+          code=$?
+          set -e
+          # 迂回の例には、分からないとする例があるので 1 で終える
+          test "$code" -eq 1
+          awk -F'\t' '($1 == 7 && $3 ~ / e02_split$/) { a = 1 } ($1 == 1 && $3 ~ / e30_calls_big_unit$/) { b = 1 } END { exit !(a && b) }' "$RUNNER_TEMP/out.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}-${{ matrix.target }}
+          path: dist
+
+  sdist:
+    needs: [follow, check]
+    if: ${{ !cancelled() && ((github.event_name == 'push' && needs.check.result == 'success') || (github.event_name != 'push' && needs.follow.outputs.tag != '')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && github.ref_name || needs.follow.outputs.tag }}
+      # sdist には、パッチを当てた ruff の crate（path の依存）も入る
+      - run: python3 scripts/prepare_ty.py
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist
+
+  publish:
+    needs: [wheels, sdist]
+    if: ${{ !cancelled() && needs.wheels.result == 'success' && needs.sdist.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      # 前の公開が途中で落ちた版の出し直しでは、上がっているファイルを飛ばして残りを上げる
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
