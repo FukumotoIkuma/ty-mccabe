@@ -8,19 +8,19 @@ repository = "https://github.com/fukumotoikuma/ty-mccabe"
 edition = "2024"
 publish = false
 
-# ty 0.0.103（astral-sh/ty の 0.0.103 のタグ）が使う ruff のコミット。Cargo.lock は ruff のものを写して版をそろえる
+# ty 0.0.112（astral-sh/ty の 0.0.112 のタグ）が使う ruff のコミット。Cargo.lock は ruff のものを写して版をそろえる
 [dependencies]
-ruff_db = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84", features = ["os"] }
-ruff_python_ast = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ruff_source_file = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ruff_python_parser = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ruff_text_size = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ty_project = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ty_python_core = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ty_module_resolver = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ty_ide = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ty_python_semantic = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
-ruff_linter = { git = "https://github.com/astral-sh/ruff", rev = "ab1a1265b8a54d9212373eb221c6540f854e1f84" }
+ruff_db = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca", features = ["os"] }
+ruff_python_ast = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ruff_source_file = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ruff_python_parser = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ruff_text_size = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ty_project = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ty_python_core = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ty_module_resolver = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ty_ide = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ty_python_semantic = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
+ruff_linter = { git = "https://github.com/astral-sh/ruff", rev = "2742584d873e2e40354100d5196f7cc80dfae8ca" }
 anyhow = "1"
 # ty check と同じく、型推論をファイルごとに並べて回す（ty が使う版）
 rayon = "1.10"

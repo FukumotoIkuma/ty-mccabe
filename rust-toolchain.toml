@@ -1,5 +1,5 @@
 # ty（Cargo.toml の ruff のコミット）を作るのと同じ版
 [toolchain]
-channel = "1.99.0"
+channel = "1.100.0"
 profile = "minimal"
 components = ["rustfmt", "clippy"]

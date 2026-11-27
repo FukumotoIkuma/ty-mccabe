@@ -28,7 +28,7 @@ use crate::units::{Kind, collect_py};
 
 /// 道具が組み込んでいる ty の版（Cargo.toml の ruff のコミットが、この版の ty のもの）。プロジェクトの ty と
 /// 版がそろうことは、wheel の依存（pyproject.toml の ty==）で uv・pip が確かめる。
-const TY_VERSION: &str = "0.0.103";
+const TY_VERSION: &str = "0.0.112";
 /// 閾値の既定（ruff の C901 の max-complexity の既定と同じ）。
 const DEFAULT_THRESHOLD: u32 = 10;
 
